@@ -74,8 +74,7 @@ package br.uff.ic.merge.logicalcoupling;
 	                    indexOf = consequentMethods.indexOf(consequentTmp);
 	                    if ((i != j) && (indexOf > -1)) {
 	                        for (Cell c : cells) {
-	                        	//&& (c.value < (threshold+1))
-	                            if ((c.value >= threshold)  && (c.row == j) && (c.col == i)) {
+	                            if ((c.value >= threshold) && (c.value < (threshold + 0.1)) && (c.row == j) && (c.col == i)) {
 	                                methodDependencies.add(consequentMethods.get(indexOf));
 	                                hasDependencies = true;
 	                            }

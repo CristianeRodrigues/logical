@@ -52,35 +52,38 @@ public class CoverageCompare {
 	public static void main(String[] args) throws IOException, ClassNotFoundException, SQLException, ParseException {
 		/*String input = "C:\\Users\\Carlos\\clones";
 		String outputPathName = "C:\\Users\\Carlos\\logical_result";
-		Double threshold = 0.1;*/
-
-		final Options options = new Options();
-
+		Double threshold = 0.3;*/
+		
 		String input = "";
 		String outputPathName = "";
 		Double threshold = 0.0;
 
-		options.addOption("i", true, "input directory");
-		options.addOption("o", true, "output directory");
-		options.addOption("t", true, "threshold from 0.0 to 1.0");
+		try {
+			
+			final Options options = new Options();
 
-		HelpFormatter formatter = new HelpFormatter();
-		formatter.printHelp( "merge-logical-coupling", options, true);
+			options.addOption("i", true, "input directory");
+			options.addOption("o", true, "output directory");
+			options.addOption("t", true, "threshold from 0.0 to 1.0");
 
-		CommandLineParser parser = new DefaultParser();
-		CommandLine cmd = parser.parse( options, args);
+			HelpFormatter formatter = new HelpFormatter();
+			formatter.printHelp( "merge-logical-coupling", options, true);
 
-		if(cmd.hasOption("i")) {
-			input  = cmd.getOptionValue("i");
-			System.out.println(input);
-		}
-		if (cmd.hasOption("o")){
-			outputPathName  = cmd.getOptionValue("o");
-			System.out.println(outputPathName);
-		}
-		if (cmd.hasOption("t")){
-			threshold  = Double.parseDouble(cmd.getOptionValue("t"));
-			System.out.println(threshold);
+			CommandLineParser parser = new DefaultParser();
+			CommandLine cmd = parser.parse( options, args);
+
+			if(cmd.hasOption("i")) {
+				input  = cmd.getOptionValue("i");
+			}
+			if (cmd.hasOption("o")){
+				outputPathName  = cmd.getOptionValue("o");
+			}
+			if (cmd.hasOption("t")){
+				threshold  = Double.parseDouble(cmd.getOptionValue("t"));
+			}
+		}catch (ParseException ex) {
+			Logger.getLogger(CoverageCompare.class.getName()).log(Level.SEVERE, null, ex);
+
 		}
 
 		File directory = new File(input);
@@ -103,7 +106,7 @@ public class CoverageCompare {
 
 					String firstHash = Git.getFirstHash(projectPath);
 
-					fillDatabase(project, project.getName(), outputPathName); //create database
+					String _database = fillDatabase(project, project.getName(), outputPathName); //create database
 
 					List<String> merges = Git.getMergeRevisions(projectPath);
 					for (String SHAMerge : merges) {
@@ -178,7 +181,7 @@ public class CoverageCompare {
 									MergeMethods mergeMethods = getMergeMethods(project, SHAMerge, editedMethodLeft, editedMethodRight);
 
 									List<Map<EditedMethod, Set<EditedMethod>>> dependencies = getMethodsDependencies(
-											project, mergeMethods, firstHash, threshold);
+											project, mergeMethods, firstHash, threshold, _database);
 
 									boolean hasFilesDependencies = false;
 
@@ -234,7 +237,7 @@ public class CoverageCompare {
 	}
 
 	private static List<Map<EditedMethod, Set<EditedMethod>>> getMethodsDependencies(File project,
-			MergeMethods mergeMethods, String firstHash, Double threshold) {
+			MergeMethods mergeMethods, String firstHash, Double threshold, String _database) {
 
 		List<Map<EditedMethod, Set<EditedMethod>>> depList = new ArrayList<>();
 
@@ -254,7 +257,7 @@ public class CoverageCompare {
 
 			List<Integer> matrices = new ArrayList<>(Arrays.asList(2));// ALTERAR AKI PARA 2 OU 5
 			System.out.println("Creating the dominoes of dependencies");
-			ArrayList<Dominoes> dominoesHistory = DominoesFiles.loadMatrices(Parameter.DATABASE, project.getName(),
+			ArrayList<Dominoes> dominoesHistory = DominoesFiles.loadMatrices(_database, project.getName(),
 					"CPU", hashsOnPreviousHistory, editedMethods, matrices);
 			Dominoes domCF = dominoesHistory.get(0);
 			Dominoes domCFt = domCF.cloneNoMatrix();
@@ -353,7 +356,7 @@ public class CoverageCompare {
 		return output;
 	}
 
-	public static void fillDatabase(File dir, String projectName, String outputPathName) throws ClassNotFoundException, SQLException {
+	public static String fillDatabase(File dir, String projectName, String outputPathName) throws ClassNotFoundException, SQLException {
 
 		String _database = outputPathName + File.separator + "gitdataminer_" + projectName + ".sqlite";
 
@@ -371,6 +374,7 @@ public class CoverageCompare {
 			commit.parse(_repo);
 			DominoesSQLDao.addCommit(commit, _repo); 
 		}
+		return _database;
 	}
 
 	public static List<ClassLanguageContructs> extractAST(String projectPath) {
